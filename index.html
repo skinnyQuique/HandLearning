@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeñaFácil</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #ffffff; --text: #1d2433; --muted: #5b6475;
+    --accent: #3b6cf6; --accent-soft: #e6edff; --ok: #1f9d55; --bad: #d64545;
+    --border: #dfe4ee;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--accent); color: #fff; padding: 16px; text-align: center; }
+  header h1 { margin: 0; font-size: 1.6rem; }
+  header p { margin: 4px 0 0; opacity: .9; }
+  nav { display: flex; gap: 8px; justify-content: center; padding: 12px; flex-wrap: wrap; }
+  nav button { border: 1px solid var(--border); background: var(--card); padding: 10px 16px; border-radius: 999px; font-size: 1rem; cursor: pointer; color: var(--text); }
+  nav button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  main { max-width: 1000px; margin: 0 auto; padding: 0 16px 40px; }
+  section { display: none; }
+  section.active { display: block; }
+  h2 { margin-top: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+  .card .emoji { font-size: 3rem; text-align: center; }
+  .card h3 { margin: 8px 0 4px; text-align: center; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .tag { display: inline-block; font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-top: 8px; }
+  .cam-wrap { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .cam-wrap { grid-template-columns: 1fr; } }
+  .video-box { position: relative; background: #000; border-radius: 14px; overflow: hidden; aspect-ratio: 4/3; }
+  .video-box video, .video-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .video-box .overlay-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; }
+  .big { font-size: 2.4rem; font-weight: 700; text-align: center; margin: 8px 0; }
+  .muted { color: var(--muted); }
+  .btn { background: var(--accent); color: #fff; border: 0; padding: 10px 16px; border-radius: 10px; font-size: 1rem; cursor: pointer; margin: 4px 4px 4px 0; }
+  .btn.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .sentence { min-height: 60px; background: var(--accent-soft); border-radius: 10px; padding: 12px; font-size: 1.3rem; }
+  .bar { height: 10px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .bar div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+  .result-ok { color: var(--ok); } .result-bad { color: var(--bad); }
+  input[type=text] { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; border: 1px solid var(--border); }
+  .letters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .letter { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px; width: 120px; text-align: center; }
+  .letter b { font-size: 1.6rem; display: block; }
+  .letter small { color: var(--muted); }
+  .note { background: #fff7e0; border: 1px solid #f1d98a; padding: 10px 12px; border-radius: 10px; font-size: .9rem; margin: 12px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🤟 SeñaFácil</h1>
+  <p>Prototipo para aprender y traducir lenguaje de señas</p>
+</header>
+
+<nav>
+  <button data-tab="aprender" class="active">📚 Aprender</button>
+  <button data-tab="practicar">🎯 Practicar</button>
+  <button data-tab="traductor">📷 Traductor</button>
+  <button data-tab="deletrear">🔤 Texto a señas</button>
+</nav>
+
+<main>
+  <!-- APRENDER -->
+  <section id="aprender" class="active">
+    <h2>Señas básicas</h2>
+    <p class="muted">Estas son las señas que la cámara puede reconocer. Lee cómo se hace cada una y luego ve a <b>Practicar</b>.</p>
+    <div class="grid" id="lessonGrid"></div>
+    <div class="note">ℹ️ Este es un prototipo escolar. Las señas reales de la Lengua de Señas Mexicana (LSM) incluyen movimiento y expresión facial; aquí la cámara solo reconoce la <b>forma de la mano</b>.</div>
+  </section>
+
+  <!-- PRACTICAR -->
+  <section id="practicar">
+    <h2>Practica con la cámara</h2>
+    <div class="cam-wrap">
+      <div class="video-box" data-cam></div>
+      <div class="card">
+        <p class="muted">Haz la seña de:</p>
+        <div class="big" id="targetWord">—</div>
+        <div class="emoji" style="font-size:3rem;text-align:center" id="targetEmoji"></div>
+        <p class="muted" id="targetHow"></p>
+        <p>Mantén la seña hasta llenar la barra:</p>
+        <div class="bar"><div id="practiceBar"></div></div>
+        <p class="big" id="practiceResult" style="font-size:1.4rem"></p>
+        <button class="btn" id="nextBtn">Siguiente seña ➡️</button>
+        <p class="muted">Puntos: <b id="score">0</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRADUCTOR -->
+  <section id="traductor">
+    <h2>Traductor: señas → texto y voz</h2>
+    <div class="cam-wrap">
+      <div class="video-box" data-cam></div>
+      <div class="card">
+        <p class="muted">Seña detectada:</p>
+        <div class="big" id="liveWord">—</div>
+        <div class="bar"><div id="holdBar"></div></div>
+        <p class="muted" style="font-size:.85rem">Mantén la seña un momento para agregarla a la frase.</p>
+        <p class="muted">Frase:</p>
+        <div class="sentence" id="sentence"></div>
+        <button class="btn" id="speakBtn">🔊 Leer en voz alta</button>
+        <button class="btn secondary" id="undoBtn">↩️ Borrar última</button>
+        <button class="btn secondary" id="clearBtn">🗑️ Limpiar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DELETREAR -->
+  <section id="deletrear">
+    <h2>Texto a señas (deletreo)</h2>
+    <p class="muted">Escribe una palabra y verás cómo deletrearla con el alfabeto manual.</p>
+    <input type="text" id="spellInput" placeholder="Escribe tu nombre, por ejemplo: ANA" maxlength="30">
+    <div class="letters" id="letters"></div>
+    <div class="note">ℹ️ Descripciones simplificadas del alfabeto manual. Para aprenderlo bien, compáralo con un diccionario de LSM con imágenes.</div>
+  </section>
+</main>
+
+<script type="module">
+import { GestureRecognizer, FilesetResolver, DrawingUtils }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+// ---------- Datos: señas que reconoce el modelo ----------
+// El modelo de MediaPipe reconoce 7 gestos; aquí los asociamos a palabras.
+const SIGNS = {
+  Open_Palm:   { word: "Hola",       emoji: "🖐️", how: "Mano abierta con los dedos juntos, palma hacia el frente. (En LSM se lleva desde la frente hacia afuera, como un saludo.)" },
+  Thumb_Up:    { word: "Bien",       emoji: "👍", how: "Puño cerrado con el pulgar hacia arriba." },
+  Thumb_Down:  { word: "Mal",        emoji: "👎", how: "Puño cerrado con el pulgar hacia abajo." },
+  Victory:     { word: "Paz",        emoji: "✌️", how: "Dedos índice y medio extendidos en forma de V; los demás doblados." },
+  ILoveYou:    { word: "Te quiero",  emoji: "🤟", how: "Pulgar, índice y meñique extendidos; medio y anular doblados." },
+  Pointing_Up: { word: "Yo / Uno",   emoji: "☝️", how: "Solo el dedo índice extendido hacia arriba." },
+  Closed_Fist: { word: "Sí",         emoji: "✊", how: "Puño cerrado. (En LSM se mueve hacia arriba y abajo, como asintiendo.)" },
+};
+const SIGN_KEYS = Object.keys(SIGNS);
+
+// Alfabeto manual simplificado
+const ALPHABET = {
+  A:"Puño, pulgar al lado", B:"Mano plana, pulgar doblado", C:"Mano en forma de C", D:"Índice arriba, otros tocan pulgar",
+  E:"Dedos doblados sobre el pulgar", F:"Índice y pulgar se tocan, otros arriba", G:"Índice y pulgar hacia un lado",
+  H:"Índice y medio horizontales", I:"Solo meñique arriba", J:"Meñique arriba, dibuja una J", K:"Índice y medio arriba, pulgar entre ellos",
+  L:"Índice arriba y pulgar al lado (L)", M:"Tres dedos sobre el pulgar", N:"Dos dedos sobre el pulgar", Ñ:"Como N moviendo la mano",
+  O:"Dedos forman una O", P:"Como K apuntando abajo", Q:"Como G apuntando abajo", R:"Índice y medio cruzados",
+  S:"Puño con pulgar al frente", T:"Pulgar entre índice y medio", U:"Índice y medio juntos arriba", V:"Índice y medio en V",
+  W:"Tres dedos arriba", X:"Índice en gancho", Y:"Pulgar y meñique extendidos", Z:"Índice dibuja una Z",
+};
+
+// ---------- Pestañas ----------
+const tabs = document.querySelectorAll("nav button");
+tabs.forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(id) {
+  tabs.forEach(b => b.classList.toggle("active", b.dataset.tab === id));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("active", s.id === id));
+  const box = document.querySelector(`#${id} [data-cam]`);
+  if (box) startCamera(box); else stopCamera();
+}
+
+// ---------- Aprender ----------
+const grid = document.getElementById("lessonGrid");
+for (const k of SIGN_KEYS) {
+  const s = SIGNS[k];
+  grid.insertAdjacentHTML("beforeend",
+    `<div class="card"><div class="emoji">${s.emoji}</div><h3>${s.word}</h3><p>${s.how}</p><span class="tag">Reconocible por cámara</span></div>`);
+}
+
+// ---------- Deletrear ----------
+const spellInput = document.getElementById("spellInput");
+const lettersEl = document.getElementById("letters");
+spellInput.oninput = () => {
+  lettersEl.innerHTML = "";
+  for (const ch of spellInput.value.toUpperCase()) {
+    if (ch === " ") { lettersEl.insertAdjacentHTML("beforeend", `<div style="width:24px"></div>`); continue; }
+    const d = ALPHABET[ch];
+    if (!d) continue;
+    lettersEl.insertAdjacentHTML("beforeend", `<div class="letter"><b>${ch}</b><small>${d}</small></div>`);
+  }
+};
+
+// ---------- Cámara + reconocimiento ----------
+let recognizer = null, stream = null, running = false, lastVideoTime = -1;
+const video = document.createElement("video");
+video.autoplay = true; video.playsInline = true; video.muted = true;
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+const msg = document.createElement("div");
+msg.className = "overlay-msg";
+
+async function loadModel() {
+  if (recognizer) return;
+  msg.textContent = "Cargando modelo de reconocimiento…";
+  const files = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  recognizer = await GestureRecognizer.createFromOptions(files, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numHands: 1,
+  });
+}
+
+async function startCamera(box) {
+  box.append(video, canvas, msg);
+  msg.style.display = "flex";
+  try {
+    await loadModel();
+    if (!stream) {
+      msg.textContent = "Permite el acceso a la cámara…";
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+      video.srcObject = stream;
+      await video.play();
+    }
+    msg.style.display = "none";
+    if (!running) { running = true; requestAnimationFrame(loop); }
+  } catch (e) {
+    msg.textContent = "No se pudo usar la cámara: " + e.message;
+  }
+}
+
+function stopCamera() {
+  running = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function loop() {
+  if (!running) return;
+  if (video.currentTime !== lastVideoTime && video.videoWidth) {
+    lastVideoTime = video.currentTime;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    const res = recognizer.recognizeForVideo(video, performance.now());
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const draw = new DrawingUtils(ctx);
+    for (const lm of res.landmarks) {
+      draw.drawConnectors(lm, GestureRecognizer.HAND_CONNECTIONS, { color: "#3b6cf6", lineWidth: 4 });
+      draw.drawLandmarks(lm, { color: "#ffffff", lineWidth: 1, radius: 3 });
+    }
+    let gesture = null;
+    const g = res.gestures[0]?.[0];
+    if (g && g.categoryName !== "None" && g.score > 0.6) gesture = g.categoryName;
+    onGesture(gesture);
+  }
+  requestAnimationFrame(loop);
+}
+
+// Cuenta cuántos cuadros seguidos se mantiene el mismo gesto
+let holdGesture = null, holdCount = 0;
+const HOLD_FRAMES = 25;
+
+function onGesture(gesture) {
+  if (gesture === holdGesture) holdCount++; else { holdGesture = gesture; holdCount = 0; }
+  const pct = gesture ? Math.min(100, (holdCount / HOLD_FRAMES) * 100) : 0;
+  const active = document.querySelector("section.active").id;
+  if (active === "traductor") translatorStep(gesture, pct);
+  if (active === "practicar") practiceStep(gesture, pct);
+}
+
+// ---------- Traductor ----------
+const words = [];
+const sentenceEl = document.getElementById("sentence");
+let addedThisHold = false;
+function translatorStep(gesture, pct) {
+  document.getElementById("liveWord").textContent = gesture ? `${SIGNS[gesture].emoji} ${SIGNS[gesture].word}` : "—";
+  document.getElementById("holdBar").style.width = pct + "%";
+  if (pct < 100) { addedThisHold = false; return; }
+  if (!addedThisHold) {
+    addedThisHold = true;
+    words.push(SIGNS[gesture].word);
+    renderSentence();
+  }
+}
+function renderSentence() { sentenceEl.textContent = words.join(" "); }
+document.getElementById("undoBtn").onclick = () => { words.pop(); renderSentence(); };
+document.getElementById("clearBtn").onclick = () => { words.length = 0; renderSentence(); };
+document.getElementById("speakBtn").onclick = () => {
+  if (!words.length) return;
+  const u = new SpeechSynthesisUtterance(words.join(" "));
+  u.lang = "es-MX";
+  speechSynthesis.speak(u);
+};
+
+// ---------- Práctica ----------
+let target = null, score = 0, solved = false;
+function newTarget() {
+  let k; do { k = SIGN_KEYS[Math.floor(Math.random() * SIGN_KEYS.length)]; } while (k === target);
+  target = k; solved = false;
+  document.getElementById("targetWord").textContent = SIGNS[k].word;
+  document.getElementById("targetEmoji").textContent = SIGNS[k].emoji;
+  document.getElementById("targetHow").textContent = SIGNS[k].how;
+  document.getElementById("practiceResult").textContent = "";
+  document.getElementById("practiceBar").style.width = "0%";
+}
+function practiceStep(gesture, pct) {
+  if (solved) return;
+  const res = document.getElementById("practiceResult");
+  const bar = document.getElementById("practiceBar");
+  if (gesture === target) {
+    bar.style.width = pct + "%";
+    res.textContent = "¡Vas bien, mantenla!"; res.className = "big result-ok";
+    if (pct >= 100) {
+      solved = true; score++;
+      document.getElementById("score").textContent = score;
+      res.textContent = "✅ ¡Correcto!";
+      setTimeout(newTarget, 1500);
+    }
+  } else {
+    bar.style.width = "0%";
+    res.textContent = gesture ? `Veo "${SIGNS[gesture].word}", intenta otra vez` : "";
+    res.className = "big result-bad";
+  }
+}
+document.getElementById("nextBtn").onclick = newTarget;
+newTarget();
+</script>
+</body>
+</html>
